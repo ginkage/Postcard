@@ -94,10 +94,7 @@ public class PostcardActivity extends Activity
 
 class PostcardSurfaceView extends GLSurfaceView
 {
-//	private final float TOUCH_SCALE_FACTOR = 180.0f / 320;
 	public PostcardRenderer mRenderer = null;
-//	private float mPreviousX;
-//	private float mPreviousY;
 
 	public PostcardSurfaceView(Context context) {
 		super(context);
@@ -108,9 +105,6 @@ class PostcardSurfaceView extends GLSurfaceView
 		// Set the Renderer for drawing on the GLSurfaceView
 		mRenderer = new PostcardRenderer(context);
 		setRenderer(mRenderer);
-
-		// Render the view only when there is a change
-//		setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
 	}
 
 	@Override 
@@ -119,34 +113,12 @@ class PostcardSurfaceView extends GLSurfaceView
 		// and other input controls. In this case, you are only
 		// interested in events where the touch position changed.
 
-//		float x = e.getX();
-//		float y = e.getY();
-		
 		switch (e.getAction()) {
 			case MotionEvent.ACTION_UP:
 				mRenderer.showText = !mRenderer.showText;
 				break;
-
-/*			case MotionEvent.ACTION_MOVE:
-				float dx = x - mPreviousX;
-				float dy = y - mPreviousY;
-	
-				// reverse direction of rotation above the mid-line
-				if (y > getHeight() / 2) {
-				  dx = dx * -1 ;
-				}
-	
-				// reverse direction of rotation to left of the mid-line
-				if (x < getWidth() / 2) {
-				  dy = dy * -1 ;
-				}
-*/
-//				mRenderer.mAngle += (dx + dy) * TOUCH_SCALE_FACTOR;
-//				requestRender();
 		}
 
-//		mPreviousX = x;
-//		mPreviousY = y;
 		return true;
 	} 
 }

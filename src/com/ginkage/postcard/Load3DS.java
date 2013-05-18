@@ -61,14 +61,11 @@ class Load3DS {
 	{
 		file = null;
 		Scene3D scene = null; 
-//		File dir = new File(Environment.getExternalStorageDirectory().getAbsolutePath());
-//		File fil = new File(dir.getAbsolutePath() + File.separator + fileName);
-//		if (!fil.exists()) return scene;
 
 		try {
 			filePos = 0;
-			file = new BufferedInputStream(stream);//new FileInputStream(fil));
-			scene = ProcessFile(stream.available());//fil.length());
+			file = new BufferedInputStream(stream);
+			scene = ProcessFile(stream.available());
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
