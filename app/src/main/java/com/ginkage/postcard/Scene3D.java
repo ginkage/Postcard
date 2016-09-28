@@ -1,19 +1,18 @@
 package com.ginkage.postcard;
 
-import java.util.ArrayList;
-
 import android.opengl.Matrix;
 
-public class Scene3D {
-	public ArrayList<Material3D> materials;
-	public ArrayList<Object3D> objects;
-	public ArrayList<Light3D> lights;
-	public ArrayList<Animation> animations;
-	public float[] background;
-	public float[] ambient;
+import java.util.ArrayList;
 
-	public Material3D FindMaterial(String name)
-	{
+class Scene3D {
+	ArrayList<Material3D> materials;
+	ArrayList<Object3D> objects;
+	ArrayList<Light3D> lights;
+	ArrayList<Animation> animations;
+	float[] background;
+	float[] ambient;
+
+	Material3D FindMaterial(String name) {
 		if (materials == null || name == null) return null;
 		int i, n = materials.size();
 		for (i = 0; i < n; i++) {
@@ -24,8 +23,7 @@ public class Scene3D {
 		return null;
 	}
 
-	public Object3D FindObject(String name)
-	{
+	Object3D FindObject(String name) {
 		if (objects == null || name == null) return null;
 		int i, n = objects.size();
 		for (i = 0; i < n; i++) {
@@ -36,8 +34,7 @@ public class Scene3D {
 		return null;
 	}
 
-	public Light3D FindLight(String name)
-	{
+	Light3D FindLight(String name) {
 		if (lights == null || name == null) return null;
 		int i, n = lights.size();
 		for (i = 0; i < n; i++) {
@@ -48,8 +45,7 @@ public class Scene3D {
 		return null;
 	}
 
-	public Animation FindAnimation(int id)
-	{
+	Animation FindAnimation(int id) {
 		if (animations == null || id == 0xffff) return null;
 		int i, n = animations.size();
 		for (i = 0; i < n; i++) {
@@ -60,14 +56,12 @@ public class Scene3D {
 		return null;
 	}
 
-	private void lerp3(float[] out, float[] from, float[] to, float t)
-	{
+	private void lerp3(float[] out, float[] from, float[] to, float t) {
 		for (int i = 0; i < 3; i++)
 			out[i] = from[i] + (to[i] - from[i]) * t;
 	}
 
-	private AnimKey findVec(AnimKey[] keys, float time)
-	{
+	private AnimKey findVec(AnimKey[] keys, float time) {
 		AnimKey key = keys[keys.length - 1];
 
 		// We'll use either first, or last, or interpolated key
@@ -90,14 +84,14 @@ public class Scene3D {
 		return key;
 	}
 
-	private void applyRot(float[] result, float[] data, float t)
-	{
-		if (Math.abs(data[3]) > 1.0e-7 && Math.hypot(Math.hypot(data[0], data[1]), data[2]) > 1.0e-7)
-			Matrix.rotateM(result, 0, (float) (data[3] * t * 180 / Math.PI), data[0], data[1], data[2]);
+	private void applyRot(float[] result, float[] data, float t) {
+		if (Math.abs(data[3]) > 1.0e-7
+                && Math.hypot(Math.hypot(data[0], data[1]), data[2]) > 1.0e-7)
+			Matrix.rotateM(result, 0,
+                    (float) (data[3] * t * 180 / Math.PI), data[0], data[1], data[2]);
 	}
 
-	public void Compute(float time)
-	{
+	void Compute(float time) {
 		int i, n = animations.size();
 		for (i = 0; i < n; i++) {
 			Animation anim = animations.get(i);
@@ -154,64 +148,64 @@ public class Scene3D {
 			Matrix.multiplyMM(anim.world, 0, anim.result, 0, result, 0);
 		}
 	}
-}
 
-class Object3D {
-	public String name;
-	public int vertCount;
-	public int indCount;
-	public ArrayList<FaceMat> faceMats;
-	public int glVertices;
-	public int glIndices;
-	public float[] vertexBuffer;
-	public float[] trMatrix;
-}
+    static class Object3D {
+        String name;
+        int vertCount;
+        int indCount;
+        ArrayList<FaceMat> faceMats;
+        int glVertices;
+        int glIndices;
+        float[] vertexBuffer;
+        float[] trMatrix;
+    }
 
-class FaceMat {
-	public Material3D material;
-	public short[] indexBuffer;
-	public int indCount;
-	public int bufOffset;
-}
+    static class FaceMat {
+        Material3D material;
+        short[] indexBuffer;
+        int indCount;
+        int bufOffset;
+    }
 
-class Light3D {
-	public String name;
-	public float[] pos;
-	public float[] color;
-	public float[] dir;
-	public float theta, phi;
-}
+    static class Light3D {
+        String name;
+        float[] pos;
+        float[] color;
+        float[] dir;
+        float theta, phi;
+    }
 
-class Material3D {
-	public String name;
-	public float[] ambient;
-	public float[] diffuse;
-	public float[] specular;
-	public String texture;
-	public float shininess;
-	public float shinStren;
-	public float transparency;
-	public float selfIllum;
-	public int type;
-}
+    static class Material3D {
+        String name;
+        float[] ambient;
+        float[] diffuse;
+        float[] specular;
+        String texture;
+        float shininess;
+        float shinStren;
+        float transparency;
+        float selfIllum;
+        int type;
+    }
 
-class Animation {
-	public int id;
-	public String name;
-	public Object3D object;
-	public Light3D light;
-	public Animation parent;
-	public float[] pivot;
+    static class Animation {
+        int id;
+        String name;
+        Object3D object;
+        Light3D light;
+        Animation parent;
+        float[] pivot;
 
-	public AnimKey[] position;
-	public AnimKey[] rotation;
-	public AnimKey[] scaling;
+        AnimKey[] position;
+        AnimKey[] rotation;
+        AnimKey[] scaling;
 
-	public float[] result;
-	public float[] world;
-}
+        float[] result;
+        float[] world;
+    }
 
-class AnimKey {
-	public float time;
-	public float[] data;
+    static class AnimKey {
+        float time;
+        float[] data;
+    }
 }

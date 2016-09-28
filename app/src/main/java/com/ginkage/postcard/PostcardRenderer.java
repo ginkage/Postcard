@@ -1,6 +1,13 @@
 package com.ginkage.postcard;
 
-import java.io.FileInputStream;
+import android.content.Context;
+import android.content.res.AssetManager;
+import android.opengl.GLES20;
+import android.opengl.GLSurfaceView.Renderer;
+import android.opengl.Matrix;
+import android.os.SystemClock;
+import android.util.Log;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -12,24 +19,8 @@ import java.nio.ShortBuffer;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
-import android.content.Context;
-import android.content.res.AssetFileDescriptor;
-import android.content.res.AssetManager;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.Typeface;
-import android.opengl.GLES20;
-import android.opengl.GLSurfaceView.Renderer;
-import android.opengl.GLUtils;
-import android.opengl.Matrix;
-import android.os.SystemClock;
-import android.util.Log;
-
 public class PostcardRenderer implements Renderer {
-	private final String vertexShaderCode =
+	private static final String vertexShaderCode =
 		"precision mediump float;\n" +
 		"uniform mat4 uMVPMatrix;\n" +
 		"uniform vec4 uAmbient;\n" +
@@ -66,7 +57,7 @@ public class PostcardRenderer implements Renderer {
 		"	FrontColor = clamp(vcolor, 0.0, 1.0);\n" +
 		"}\n";
 
-	private final String fragmentShaderCode =
+	private static final String fragmentShaderCode =
 		"precision mediump float;\n" +
 		"varying vec4 FrontColor;\n" +
 		"void main() {\n" +
@@ -82,7 +73,7 @@ public class PostcardRenderer implements Renderer {
 	private final int[] muLightPos = new int[8];
 	private final int[] muLightCol = new int[8];
 
-	private final String quadVS =
+	private static final String quadVS =
 	   	"precision mediump float;\n" +
 		"attribute vec4 vPosition;\n" +
 		"attribute vec4 vTexCoord0;\n" +
@@ -92,7 +83,7 @@ public class PostcardRenderer implements Renderer {
 		"	TexCoord0 = vTexCoord0;\n" +
 		"}\n";
 
-	private final String quadFS =
+	private static final String quadFS =
 		"precision mediump float;\n" +
 		"uniform sampler2D uTexture0;\n" +
 		"varying vec4 TexCoord0;\n" +
@@ -105,7 +96,7 @@ public class PostcardRenderer implements Renderer {
 	private int maQTexCoord;
 	private int muQTexture;
 
-	private final String gaussVS =
+	private static final String gaussVS =
 	   	"precision mediump float;\n" +
 		"attribute vec4 vPosition;\n" +
 		"attribute vec4 vTexCoord0;\n" +
@@ -125,7 +116,7 @@ public class PostcardRenderer implements Renderer {
 		"	TexCoord3 = vTexCoord0 + uTexOffset3;\n" +
 		"}\n";
 
-	private final String gaussFS =
+	private static final String gaussFS =
 	   	"precision mediump float;\n" +
 		"uniform sampler2D uTexture0;\n" +
 		"uniform vec4 uTexCoef0;\n" +
@@ -151,56 +142,12 @@ public class PostcardRenderer implements Renderer {
 	private final int[] muGTexCoef = new int[4];
 	private final int[] muGTexOffset = new int[4];
 
-	private final String particleVS =
-	   	"precision mediump float;\n" +
-		"attribute vec4 vPosition;\n" +
-		"attribute float vSizeShift;\n" +
-
-		"uniform float uPointSize;\n" +
-		"uniform float uTime;\n" +
-		"uniform vec4 uColor;\n" +
-
-		"varying vec4 Color;\n" +
-
-		"void main() {\n" +
-		"	float Phase = abs(fract(uTime + vSizeShift) * 2.0 - 1.0);\n" +
-		"	vec4 pColor = uColor;\n" +
-		"	if (Phase > 0.75) {\n" +
-		"		pColor.z = (Phase - 0.75) * 4.0;\n" +
-		"	};\n" +
-		"	Color = pColor;\n" +
-		"	gl_PointSize = uPointSize * Phase;\n" +
-		"	gl_Position = vPosition;\n" +
-		"}\n";
-
-	private final String particleFS =
-	   	"precision mediump float;\n" +
-		"uniform sampler2D uTexture0;\n" +
-		"varying vec4 Color;\n" +
-
-		"void main()\n" +
-		"{\n" +
-		"	gl_FragColor = texture2D(uTexture0, gl_PointCoord) * Color;\n" +
-		"}\n";
-
-	private int mPProgram;
-	private int maPPosition;
-	private int maPSizeShift;
-	private int muPPointSize;
-	private int muPTime;
-	private int muPTexture;
-	private int muPColor;
-
-	private final int mParticles = 1500;
-	private int glParticleVB;
-
 	private final float[] mMVMatrix = new float[16];
 	private final float[] mMVPMatrix = new float[16];
 	private final float[] mVMatrix = new float[16];
 	private final float[] mProjMatrix = new float[16];
 	private final float[] mCenter = new float[3];
 	private float mDist;
-	private float ratio = 1;
 	private final float[] mAmbient = new float[4];
 	private final float[] mDiffuse = new float[4];
 	private final float[] mSpecular = new float[4];
@@ -211,8 +158,6 @@ public class PostcardRenderer implements Renderer {
 	private int renderTex1;
 	private int renderTex2;
 	private int sceneTex;
-
-	private int particleTex;
 
 	private final float[] mOffsets = new float[4];
 	private final float[] pix_mult = new float[4];
@@ -238,22 +183,15 @@ public class PostcardRenderer implements Renderer {
 	public float fps = 0;
 	private long start_frame;
 	private long frames_drawn;
-	public boolean showText = false;
-
-	private float maxPointSize = 0;
-	private float curPointSize = 0;
-	private long prevTime;
 
 	private final Context mContext;
 
-	public PostcardRenderer(Context context)
-	{
+	public PostcardRenderer(Context context) {
 		super();
 		mContext = context;
 	}
 
-	private int createBuffer(float[] buffer)
-	{
+	private int createBuffer(float[] buffer) {
 		FloatBuffer floatBuf = ByteBuffer.allocateDirect(buffer.length * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
 		floatBuf.put(buffer);
 		floatBuf.position(0);
@@ -267,8 +205,7 @@ public class PostcardRenderer implements Renderer {
 		return glBuf;
 	}
 
-	private void initShapes()
-	{
+	private void initShapes() {
 		mAmbient[0] = 0.587f;
 		mAmbient[1] = 0.587f;
 		mAmbient[2] = 0.587f;
@@ -295,7 +232,7 @@ public class PostcardRenderer implements Renderer {
             assert scene != null;
             int i, num = scene.lights.size();
 			for (i = 0; i < num; i++) {
-				Light3D light = scene.lights.get(i);
+				Scene3D.Light3D light = scene.lights.get(i);
 				light.color[0] /= 4.5;
 				light.color[1] /= 4.5;
 				light.color[2] /= 4.5;
@@ -309,7 +246,7 @@ public class PostcardRenderer implements Renderer {
 
 		int i, num = scene.objects.size();
 		for (i = 0; i < num; i++) {
-			Object3D obj = scene.objects.get(i);
+			Scene3D.Object3D obj = scene.objects.get(i);
 			int j, verts = obj.vertCount;
 			for (j = 0; j < verts; j++) {
 				float x = obj.vertexBuffer[j*8 + 0];
@@ -332,7 +269,7 @@ public class PostcardRenderer implements Renderer {
 
 			int k, mats = obj.faceMats.size();
 		   	for (k = 0; k < mats; k++) {
-		   		FaceMat mat = obj.faceMats.get(k);
+		   		Scene3D.FaceMat mat = obj.faceMats.get(k);
 		   		ShortBuffer indBuf = ByteBuffer.allocateDirect(mat.indexBuffer.length * 2).order(ByteOrder.nativeOrder()).asShortBuffer();
 				indBuf.put(mat.indexBuffer);
 				indBuf.position(0);
@@ -368,8 +305,7 @@ public class PostcardRenderer implements Renderer {
 		return (size < i ? size : i);
 	}
 
-	private void DrawGauss(boolean invert)
-	{
+	private void DrawGauss(boolean invert) {
 		GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
 
 		GLES20.glUseProgram(mGProgram);
@@ -405,8 +341,7 @@ public class PostcardRenderer implements Renderer {
 		GLES20.glDisableVertexAttribArray(maGTexCoord);
 	}
 
-	private void DrawQuad()
-	{
+	private void DrawQuad() {
 		GLES20.glUseProgram(mQProgram);
 		GLES20.glDisable(GLES20.GL_DEPTH_TEST);
 
@@ -425,31 +360,7 @@ public class PostcardRenderer implements Renderer {
 		GLES20.glDisableVertexAttribArray(maQTexCoord);
 	}
 
-	private void DrawText()
-	{
-		GLES20.glUseProgram(mPProgram);
-		GLES20.glDisable(GLES20.GL_DEPTH_TEST);
-
-		GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, glParticleVB);
-		GLES20.glEnableVertexAttribArray(maPPosition);
-		GLES20.glVertexAttribPointer(maPPosition, 2, GLES20.GL_FLOAT, false, 12, 0);
-		GLES20.glEnableVertexAttribArray(maPSizeShift);
-		GLES20.glVertexAttribPointer(maPSizeShift, 1, GLES20.GL_FLOAT, false, 12, 8);
-		GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0);
-
-		GLES20.glUniform1f(muPPointSize, curPointSize);
-		GLES20.glUniform4f(muPColor, 1, 1, 0, 1);
-		GLES20.glUniform1i(muPTexture, 0);
-		GLES20.glUniform1f(muPTime, (SystemClock.uptimeMillis() % 1000) / 1000.0f);
-
-		GLES20.glDrawArrays(GLES20.GL_POINTS, 0, mParticles);
-
-		GLES20.glDisableVertexAttribArray(maPPosition);
-		GLES20.glDisableVertexAttribArray(maPSizeShift);
-	}
-
-	private void DrawScene()
-	{
+	private void DrawScene() {
 		GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
 
 		GLES20.glUseProgram(mProgram);
@@ -466,7 +377,7 @@ public class PostcardRenderer implements Renderer {
 		num = min(scene.lights.size(), 8);
 
 		for (i = 0; i < num; i++) {
-			Light3D light = scene.lights.get(i);
+			Scene3D.Light3D light = scene.lights.get(i);
 			GLES20.glUniform3fv(muLightPos[i], 1, light.pos, 0);
 			GLES20.glUniform4fv(muLightCol[i], 1, light.color, 0);
 		}
@@ -477,8 +388,8 @@ public class PostcardRenderer implements Renderer {
 
 		num = scene.animations.size();
 		for (i = 0; i < num; i++) {
-			Animation anim = scene.animations.get(i);
-			Object3D obj = anim.object;
+			Scene3D.Animation anim = scene.animations.get(i);
+			Scene3D.Object3D obj = anim.object;
 			if (obj == null) continue;
 
 			Matrix.multiplyMM(mMVMatrix, 0, mVMatrix, 0, anim.world, 0);
@@ -496,7 +407,7 @@ public class PostcardRenderer implements Renderer {
 
 			int mats = obj.faceMats.size();
 			for (j = 0; j < mats; j++) {
-				FaceMat mat = obj.faceMats.get(j);
+				Scene3D.FaceMat mat = obj.faceMats.get(j);
 
 				if (mat.material != null) {
 					if (mat.material.ambient != null && scene.ambient != null) {
@@ -517,7 +428,8 @@ public class PostcardRenderer implements Renderer {
 					GLES20.glUniform4fv(muDiffuse, 1, mDiffuse, 0);
 				}
 
-				GLES20.glDrawElements(GLES20.GL_TRIANGLES, mat.indexBuffer.length, GLES20.GL_UNSIGNED_SHORT, mat.bufOffset * 2);
+				GLES20.glDrawElements(GLES20.GL_TRIANGLES,
+						mat.indexBuffer.length, GLES20.GL_UNSIGNED_SHORT, mat.bufOffset * 2);
 			}
 
 			GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -527,8 +439,7 @@ public class PostcardRenderer implements Renderer {
 		GLES20.glDisableVertexAttribArray(maNormal);
 	}
 
-	private void setRenderTexture(int frameBuf, int texture)
-	{
+	private void setRenderTexture(int frameBuf, int texture) {
 		if (frameBuf == 0 || frameBuf == sceneBuf)
 			GLES20.glViewport(0, 0, scrWidth, scrHeight);
 		else
@@ -540,8 +451,7 @@ public class PostcardRenderer implements Renderer {
 	}
 
 	@Override
-	public void onDrawFrame(GL10 arg0)
-	{
+	public void onDrawFrame(GL10 arg0) {
 		long curTime = SystemClock.uptimeMillis();
 		long time = curTime % 4000L;
 		mAngle = 0.090f * ((int) time);
@@ -552,62 +462,25 @@ public class PostcardRenderer implements Renderer {
 			frames_drawn = 0;
 		}
 
-		if (showText && curPointSize < maxPointSize) {
-			// fade in
-			double delta = (curTime - prevTime) / 1000.0;
-			curPointSize += maxPointSize * delta;
-			if (curPointSize > maxPointSize)
-				curPointSize = maxPointSize;
-		}
-		if (!showText && curPointSize > 0) {
-			// fade in
-			double delta = (curTime - prevTime) / 1000.0;
-			curPointSize -= maxPointSize * delta;
-			if (curPointSize < 0)
-				curPointSize = 0;
-		}
+		setRenderTexture(sceneBuf, 0);
+		DrawScene();
 
-		prevTime = curTime;
+		setRenderTexture(filterBuf1, sceneTex);
+		DrawQuad();
 
-		if (showText) {
-			setRenderTexture(sceneBuf, 0);
-			DrawScene();
-	
-			setRenderTexture(filterBuf1, sceneTex);
-			DrawQuad();
-	
-			GLES20.glEnable(GLES20.GL_BLEND);
-			GLES20.glBlendFunc(GLES20.GL_ONE, GLES20.GL_ONE);
-	
-			setRenderTexture(filterBuf2, renderTex1);
-			DrawGauss(false);
-	
-			setRenderTexture(filterBuf1, renderTex2);
-			DrawGauss(true);
-	
-			GLES20.glDisable(GLES20.GL_BLEND);
-	
-			setRenderTexture(0, sceneTex);
-			DrawQuad();
-		}
-		else {
-			setRenderTexture(filterBuf1, 0);
-			DrawScene();
+		GLES20.glEnable(GLES20.GL_BLEND);
+		GLES20.glBlendFunc(GLES20.GL_ONE, GLES20.GL_ONE);
 
-			GLES20.glEnable(GLES20.GL_BLEND);
-			GLES20.glBlendFunc(GLES20.GL_ONE, GLES20.GL_ONE);
+		setRenderTexture(filterBuf2, renderTex1);
+		DrawGauss(false);
 
-			setRenderTexture(filterBuf2, renderTex1);
-			DrawGauss(false);
+		setRenderTexture(filterBuf1, renderTex2);
+		DrawGauss(true);
 
-			setRenderTexture(filterBuf1, renderTex2);
-			DrawGauss(true);
+		GLES20.glDisable(GLES20.GL_BLEND);
 
-			GLES20.glDisable(GLES20.GL_BLEND);
-
-			setRenderTexture(0, 0);
-			DrawScene();
-		}
+		setRenderTexture(0, sceneTex);
+		DrawQuad();
 
 		GLES20.glEnable(GLES20.GL_BLEND);
 		GLES20.glBlendFunc(GLES20.GL_ONE, GLES20.GL_ONE);
@@ -615,39 +488,43 @@ public class PostcardRenderer implements Renderer {
 		setRenderTexture(0, renderTex1);
 		DrawQuad();
 
-/*		if (curPointSize > 0) {
-			setRenderTexture(0, particleTex);
-			DrawText();
-		}
-*/
 		GLES20.glDisable(GLES20.GL_BLEND);
 
 		frames_drawn++;
 	}
 
-	private int makeRenderTarget(int width, int height, int[] handles)
-	{
+	private int makeRenderTarget(int width, int height, int[] handles) {
 		GLES20.glGenTextures(1, genbuf, 0);
 		int renderTex = genbuf[0];
 		GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, renderTex);
-		GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE);
-		GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE);
-		GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
-		GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
+		GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D,
+				GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE);
+		GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D,
+				GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE);
+		GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D,
+				GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
+		GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D,
+				GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
 
-		IntBuffer texBuffer = ByteBuffer.allocateDirect(width * height * 4).order(ByteOrder.nativeOrder()).asIntBuffer();
-		GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGBA, width, height, 0, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, texBuffer);
+		IntBuffer texBuffer = ByteBuffer.allocateDirect(width * height * 4)
+				.order(ByteOrder.nativeOrder()).asIntBuffer();
+		GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D,
+				0, GLES20.GL_RGBA, width, height,
+				0, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, texBuffer);
 
 		GLES20.glGenRenderbuffers(1, genbuf, 0);
 		int depthBuf = genbuf[0];
 		GLES20.glBindRenderbuffer(GLES20.GL_RENDERBUFFER, depthBuf);
-		GLES20.glRenderbufferStorage(GLES20.GL_RENDERBUFFER, GLES20.GL_DEPTH_COMPONENT16, width, height);
+		GLES20.glRenderbufferStorage(GLES20.GL_RENDERBUFFER,
+				GLES20.GL_DEPTH_COMPONENT16, width, height);
 
 		GLES20.glGenFramebuffers(1, genbuf, 0);
 		int frameBuf = genbuf[0];
 		GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, frameBuf);
-		GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER, GLES20.GL_COLOR_ATTACHMENT0, GLES20.GL_TEXTURE_2D, renderTex, 0);
-		GLES20.glFramebufferRenderbuffer(GLES20.GL_FRAMEBUFFER, GLES20.GL_DEPTH_ATTACHMENT, GLES20.GL_RENDERBUFFER, depthBuf);
+		GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER,
+				GLES20.GL_COLOR_ATTACHMENT0, GLES20.GL_TEXTURE_2D, renderTex, 0);
+		GLES20.glFramebufferRenderbuffer(GLES20.GL_FRAMEBUFFER,
+				GLES20.GL_DEPTH_ATTACHMENT, GLES20.GL_RENDERBUFFER, depthBuf);
 
 		int res = GLES20.glCheckFramebufferStatus(GLES20.GL_FRAMEBUFFER);
 
@@ -661,9 +538,8 @@ public class PostcardRenderer implements Renderer {
 	}
 
 	@Override
-	public void onSurfaceChanged(GL10 gl, int width, int height)
-	{
-		ratio = (float) width / height;
+	public void onSurfaceChanged(GL10 gl, int width, int height) {
+		float ratio = (float) width / height;
 		Matrix.frustumM(mProjMatrix, 0, -ratio, ratio, -1, 1, 1, 1000);
 
 		int[] handles = new int[2];
@@ -702,15 +578,12 @@ public class PostcardRenderer implements Renderer {
 		mfPerTexelWidth = rs / texWidth;
 		mfPerTexelHeight = 1.0f / texHeight;
 
-		initParticles();
-
 		start_frame = SystemClock.uptimeMillis();
 		frames_drawn = 0;
 		fps = 0;
 	}
 
-	private int loadShader(int type, String shaderCode)
-	{
+	private int loadShader(int type, String shaderCode) {
 		int shader = GLES20.glCreateShader(type);
 		GLES20.glShaderSource(shader, shaderCode);
 		GLES20.glCompileShader(shader);
@@ -718,8 +591,7 @@ public class PostcardRenderer implements Renderer {
 		return shader;
 	}
 
-	private int Compile(String vs, String fs)
-	{
+	private int Compile(String vs, String fs) {
 		int vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, vs);
 		int fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, fs);
 
@@ -731,106 +603,8 @@ public class PostcardRenderer implements Renderer {
 		return prog;
 	}
 
-	private static int loadTexture(final Context context, final int resourceId)
-	{
-		final int[] textureHandle = new int[1];
-
-		GLES20.glGenTextures(1, textureHandle, 0);
-		if (textureHandle[0] != 0)
-		{
-			final BitmapFactory.Options options = new BitmapFactory.Options();
-			options.inScaled = false;   // No pre-scaling
-			// Read in the resource
-			final Bitmap bitmap = BitmapFactory.decodeResource(context.getResources(), resourceId, options);
-
-			// Bind to the texture in OpenGL
-			GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureHandle[0]);
-			// Set filtering
-			GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_NEAREST);
-			GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_NEAREST);
-
-			// Load the bitmap into the bound texture.
-			GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0);
-
-			// Recycle the bitmap, since its data has been loaded into OpenGL.
-			bitmap.recycle();
-		}
-	 
-		return textureHandle[0];
-	}
-
-	private void initParticles()
-	{
-		int width = scrWidth, height = scrHeight, fontSize = (int) (scrHeight / 8.59); // 7.84);
-
-		// Create an empty, mutable bitmap
-		Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_4444);
-		// get a canvas to paint over the bitmap
-		Canvas canvas = new Canvas(bitmap);
-		bitmap.eraseColor(Color.BLACK);
-
-		// Draw the text
-		Paint textPaint = new Paint();
-		textPaint.setTextSize(fontSize);
-		textPaint.setAntiAlias(false);
-		textPaint.setARGB(0xff, 0xff, 0xff, 0xff);
-		textPaint.setTextAlign(Paint.Align.CENTER);
-		textPaint.setTypeface(Typeface.SANS_SERIF);
-
-		int fontHeight = (fontSize * 3) / 4;
-		int pad = fontHeight / 2;
-		int gap = (height - fontHeight * 3 - pad * 2) / 2;
-		int hc = width / 2;
-
-		// draw the text centered
-		canvas.drawText("С Днём", hc, pad + fontHeight, textPaint);
-		canvas.drawText("Рождения,", hc, pad + fontHeight * 2 + gap, textPaint);
-		canvas.drawText("Настенька!", hc, pad + fontHeight * 3 + gap * 2, textPaint);
-
-		int[] pixels = new int[width * height];
-		bitmap.getPixels(pixels, 0, width, 0, 0, width, height);
-		bitmap.recycle();
-
-		int colored = 0;
-		float[] cx = new float[width * height];
-		float[] cy = new float[width * height];
-
-		for (int y = 0, idx = 0; y < height; y++)
-			for (int x = 0; x < width; x++)
-				if ((pixels[idx++] & 0xffffff) != 0) {
-					cx[colored] = x / (float)width;
-					cy[colored] = y / (float)height;
-					colored++;
-				}
-
-		float[] particleBuf = new float[3 * mParticles];
-		for (int i = 0, idx = 0; i < mParticles; i++, idx += 3) {
-			int n = (int) (Math.random() * colored);
-			particleBuf[idx + 0] = cx[n] * 2 - 1;
-			particleBuf[idx + 1] = 1 - cy[n] * 2;
-			particleBuf[idx + 2] = (float) Math.random();
-		}
-
-		curPointSize = 0;
-		maxPointSize = scrHeight / 69.0f;
-		prevTime = SystemClock.uptimeMillis();
-
-		glParticleVB = createBuffer(particleBuf);
-
-		mPProgram = Compile(particleVS, particleFS);
-		maPPosition = GLES20.glGetAttribLocation(mPProgram, "vPosition");
-		maPSizeShift = GLES20.glGetAttribLocation(mPProgram, "vSizeShift");
-		muPPointSize = GLES20.glGetUniformLocation(mPProgram, "uPointSize");
-		muPTime = GLES20.glGetUniformLocation(mPProgram, "uTime");
-		muPTexture = GLES20.glGetUniformLocation(mPProgram, "uTexture0");
-		muPColor = GLES20.glGetUniformLocation(mPProgram, "uColor");
-
-		particleTex = loadTexture(mContext, R.drawable.particle);
-	}
-
 	@Override
-	public void onSurfaceCreated(GL10 gl, EGLConfig config)
-	{
+	public void onSurfaceCreated(GL10 gl, EGLConfig config) {
 		// Set the background frame color
 		GLES20.glClearColor(0, 0, 0, 1);
 
@@ -845,8 +619,10 @@ public class PostcardRenderer implements Renderer {
 
 		int i;
 		for (i = 0; i < 8; i++) {
-			muLightPos[i] = GLES20.glGetUniformLocation(mProgram, String.format("uLight[%d].position", i));
-			muLightCol[i] = GLES20.glGetUniformLocation(mProgram, String.format("uLight[%d].color", i));
+			muLightPos[i] = GLES20.glGetUniformLocation(mProgram,
+					String.format("uLight[%d].position", i));
+			muLightCol[i] = GLES20.glGetUniformLocation(mProgram,
+					String.format("uLight[%d].color", i));
 		}
 
 		mQProgram = Compile(quadVS, quadFS);
@@ -860,17 +636,19 @@ public class PostcardRenderer implements Renderer {
 		muGTexture = GLES20.glGetUniformLocation(mGProgram, "uTexture0");
 
 		for (i = 0; i < 4; i++) {
-			muGTexOffset[i] = GLES20.glGetUniformLocation(mGProgram, String.format("uTexOffset%d", i));
-			muGTexCoef[i] = GLES20.glGetUniformLocation(mGProgram, String.format("uTexCoef%d", i));
+			muGTexOffset[i] = GLES20.glGetUniformLocation(mGProgram,
+					String.format("uTexOffset%d", i));
+			muGTexCoef[i] = GLES20.glGetUniformLocation(mGProgram,
+					String.format("uTexCoef%d", i));
 		}
 
 		initShapes();
 	}
+
+	private static class FilterKernelElement {
+        float du;
+        float dv;
+        float coef;
+    }
 }
 
-class FilterKernelElement
-{
-	public float du;
-	public float dv;
-	public float coef;
-}

@@ -1,57 +1,58 @@
 package com.ginkage.postcard;
 
-import java.io.*;
-import java.util.ArrayList;
-
 import android.opengl.Matrix;
-import android.util.FloatMath;
 import android.util.Log;
 
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+
 class Load3DS {
-	private final int CHUNK_MAIN     = 0x4D4D;
-	private final int CHUNK_OBJMESH  = 0x3D3D;
-	private final int CHUNK_OBJBLOCK = 0x4000;
-	private final int CHUNK_TRIMESH  = 0x4100;
-	private final int CHUNK_VERTLIST = 0x4110;
-	private final int CHUNK_FACELIST = 0x4120;
-	private final int CHUNK_FACEMAT  = 0x4130;
-	private final int CHUNK_MAPLIST  = 0x4140;
-	private final int CHUNK_SMOOTHG  = 0x4150;
-	private final int CHUNK_TRMATRIX = 0x4160;
-	private final int CHUNK_LIGHT    = 0x4600;
-	private final int CHUNK_SPOTL    = 0x4610;
-	private final int CHUNK_ONOFF    = 0x4620;
-	private final int CHUNK_CAMERA   = 0x4700;
-	private final int CHUNK_RGBC     = 0x0010;
-	private final int CHUNK_RGB24    = 0x0011;
-	private final int CHUNK_SHORT    = 0x0030;
-	private final int CHUNK_BACKCOL  = 0x1200;
-	private final int CHUNK_AMB      = 0x2100;
-	private final int CHUNK_MATERIAL = 0xAFFF;
-	private final int CHUNK_MATNAME  = 0xA000;
-	private final int CHUNK_AMBIENT  = 0xA010;
-	private final int CHUNK_DIFFUSE  = 0xA020;
-	private final int CHUNK_SPECULAR = 0xA030;
-	private final int CHUNK_SHININES = 0xA040;
-	private final int CHUNK_SHINSTRN = 0xA041;
-	private final int CHUNK_TRANSP   = 0xA050;
-	private final int CHUNK_SELFILL  = 0xA084;
-	private final int CHUNK_MTLTYPE  = 0xA100;
-	private final int CHUNK_TEXTURE  = 0xA200;
-	private final int CHUNK_REFLMAP  = 0xA220;
-	private final int CHUNK_BUMPMAP  = 0xA230;
-	private final int CHUNK_MAPFILE  = 0xA300;
-	private final int CHUNK_MAPPARAM = 0xA351;
-	private final int CHUNK_KEYFRAMER = 0xB000;
-	private final int CHUNK_TRACKINFO = 0xB002;
-	private final int CHUNK_SPOTINFO  = 0xB007;
-	private final int CHUNK_FRAMES    = 0xB008;
-	private final int CHUNK_OBJNAME   = 0xB010;
-	private final int CHUNK_PIVOT     = 0xB013;
-	private final int CHUNK_TRACKPOS  = 0xB020;
-	private final int CHUNK_TRACKROT  = 0xB021;
-	private final int CHUNK_TRACKSCL  = 0xB022;
-	private final int CHUNK_HIERARCHY = 0xB030;
+	private static final int CHUNK_MAIN     = 0x4D4D;
+	private static final int CHUNK_OBJMESH  = 0x3D3D;
+	private static final int CHUNK_OBJBLOCK = 0x4000;
+	private static final int CHUNK_TRIMESH  = 0x4100;
+	private static final int CHUNK_VERTLIST = 0x4110;
+	private static final int CHUNK_FACELIST = 0x4120;
+	private static final int CHUNK_FACEMAT  = 0x4130;
+	private static final int CHUNK_MAPLIST  = 0x4140;
+	private static final int CHUNK_SMOOTHG  = 0x4150;
+	private static final int CHUNK_TRMATRIX = 0x4160;
+	private static final int CHUNK_LIGHT    = 0x4600;
+	private static final int CHUNK_SPOTL    = 0x4610;
+	private static final int CHUNK_ONOFF    = 0x4620;
+	private static final int CHUNK_CAMERA   = 0x4700;
+	private static final int CHUNK_RGBC     = 0x0010;
+	private static final int CHUNK_RGB24    = 0x0011;
+	private static final int CHUNK_SHORT    = 0x0030;
+	private static final int CHUNK_BACKCOL  = 0x1200;
+	private static final int CHUNK_AMB      = 0x2100;
+	private static final int CHUNK_MATERIAL = 0xAFFF;
+	private static final int CHUNK_MATNAME  = 0xA000;
+	private static final int CHUNK_AMBIENT  = 0xA010;
+	private static final int CHUNK_DIFFUSE  = 0xA020;
+	private static final int CHUNK_SPECULAR = 0xA030;
+	private static final int CHUNK_SHININES = 0xA040;
+	private static final int CHUNK_SHINSTRN = 0xA041;
+	private static final int CHUNK_TRANSP   = 0xA050;
+	private static final int CHUNK_SELFILL  = 0xA084;
+	private static final int CHUNK_MTLTYPE  = 0xA100;
+	private static final int CHUNK_TEXTURE  = 0xA200;
+	private static final int CHUNK_REFLMAP  = 0xA220;
+	private static final int CHUNK_BUMPMAP  = 0xA230;
+	private static final int CHUNK_MAPFILE  = 0xA300;
+	private static final int CHUNK_MAPPARAM = 0xA351;
+	private static final int CHUNK_KEYFRAMER = 0xB000;
+	private static final int CHUNK_TRACKINFO = 0xB002;
+	private static final int CHUNK_SPOTINFO  = 0xB007;
+	private static final int CHUNK_FRAMES    = 0xB008;
+	private static final int CHUNK_OBJNAME   = 0xB010;
+	private static final int CHUNK_PIVOT     = 0xB013;
+	private static final int CHUNK_TRACKPOS  = 0xB020;
+	private static final int CHUNK_TRACKROT  = 0xB021;
+	private static final int CHUNK_TRACKSCL  = 0xB022;
+	private static final int CHUNK_HIERARCHY = 0xB030;
 
 	private BufferedInputStream file;
 	private final byte[] bytes = new byte[8];
@@ -66,8 +67,6 @@ class Load3DS {
 			filePos = 0;
 			file = new BufferedInputStream(stream);
 			scene = ProcessFile(stream.available());
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -84,8 +83,11 @@ class Load3DS {
 
 	private void Skip(long count) throws IOException
 	{
-		file.skip(count);
-		filePos += count;
+		while (count > 0) {
+			long n = file.skip(count);
+			count -= n;
+			filePos += n;
+		}
 	}
 
 	private void Seek(long end) throws IOException
@@ -156,10 +158,10 @@ class Load3DS {
 	private Scene3D ChunkMain(int len) throws IOException
 	{
 		Scene3D scene = new Scene3D();
-		scene.materials = new ArrayList<Material3D>();
-		scene.objects = new ArrayList<Object3D>();
-		scene.lights = new ArrayList<Light3D>();
-		scene.animations = new ArrayList<Animation>();
+		scene.materials = new ArrayList<>();
+		scene.objects = new ArrayList<>();
+		scene.lights = new ArrayList<>();
+		scene.animations = new ArrayList<>();
 
 		long end = filePos + len;
 		while (filePos < end) {
@@ -209,7 +211,7 @@ class Load3DS {
 				break;
 
 			case CHUNK_MATERIAL:
-				Material3D mat = ChunkMaterial(chunkLen);
+				Scene3D.Material3D mat = ChunkMaterial(chunkLen);
 				if (mat != null)
 					scene.materials.add(mat);
 				break;
@@ -234,13 +236,13 @@ class Load3DS {
 
 			switch (chunkID) {
 			case CHUNK_TRIMESH:
-				Object3D obj = ChunkTrimesh(chunkLen, name, scene);
+				Scene3D.Object3D obj = ChunkTrimesh(chunkLen, name, scene);
 				if (obj != null)
 					scene.objects.add(obj);
 				break;
 
 			case CHUNK_LIGHT:
-				Light3D light = ChunkLight(chunkLen, name);
+				Scene3D.Light3D light = ChunkLight(chunkLen, name);
 				if (light != null)
 					scene.lights.add(light);
 				break;
@@ -253,13 +255,13 @@ class Load3DS {
 		Seek(end);
 	}
 
-	private Object3D ChunkTrimesh(int len, String name, Scene3D scene) throws IOException
+	private Scene3D.Object3D ChunkTrimesh(int len, String name, Scene3D scene) throws IOException
 	{
 		long end = filePos + len;
 
-		Object3D obj = new Object3D();
+		Scene3D.Object3D obj = new Scene3D.Object3D();
 		obj.name = name;
-		obj.faceMats = new ArrayList<FaceMat>();
+		obj.faceMats = new ArrayList<>();
 		obj.indCount = 0;
 
 		int i, k, num;
@@ -326,7 +328,9 @@ class Load3DS {
 
 	private static float DotSquare(float[] v, int offset)
 	{
-		return v[offset + 0]*v[offset + 0] + v[offset + 1]*v[offset + 1] + v[offset + 2]*v[offset + 2];
+		return v[offset + 0]*v[offset + 0]
+				+ v[offset + 1]*v[offset + 1]
+				+ v[offset + 2]*v[offset + 2];
 	}
 
 	private static void VecSubstract(float[] res, float[] v, int offset1, int offset2)
@@ -345,13 +349,13 @@ class Load3DS {
 
 	private void VecNormalize(float[] v, int offset)
 	{
-		double nlen = 1 / FloatMath.sqrt(DotSquare(v, offset));
+		double nlen = 1 / Math.sqrt(DotSquare(v, offset));
 		v[offset + 0] *= nlen;
 		v[offset + 1] *= nlen;
 		v[offset + 2] *= nlen;
 	}
 
-	private void ChunkFaceList(int len, Object3D obj, Scene3D scene) throws IOException
+	private void ChunkFaceList(int len, Scene3D.Object3D obj, Scene3D scene) throws IOException
 	{
 		long end = filePos + len;
 
@@ -442,7 +446,7 @@ class Load3DS {
 
 			switch (chunkID) {
 			case CHUNK_FACEMAT:
-				FaceMat mat = new FaceMat();
+				Scene3D.FaceMat mat = new Scene3D.FaceMat();
 				String name = ChunkName(0);
 				mat.material = scene.FindMaterial(name);
 				num = ReadUnsignedShort();
@@ -560,7 +564,7 @@ class Load3DS {
 			VecNormalize(obj.vertexBuffer, k);
 
 		for (m = 0; m < obj.faceMats.size(); m++) {
-			FaceMat mat = obj.faceMats.get(m);
+			Scene3D.FaceMat mat = obj.faceMats.get(m);
 			k = 0;
 			for (i = 0; i < mat.indCount; i++)
 				for (t = 0; t < 3; t++) {
@@ -570,7 +574,7 @@ class Load3DS {
 		}
 
 		if (unused > 0) {
-			FaceMat mat = new FaceMat();
+			Scene3D.FaceMat mat = new Scene3D.FaceMat();
 			mat.indexBuffer = new short[3*unused];
 			mat.bufOffset = obj.indCount;
 			obj.indCount += 3*unused;
@@ -586,11 +590,11 @@ class Load3DS {
 		}
 	}
 
-	private Light3D ChunkLight(int len, String name) throws IOException
+	private Scene3D.Light3D ChunkLight(int len, String name) throws IOException
 	{
 		long end = filePos + len;
 
-		Light3D light = new Light3D();
+		Scene3D.Light3D light = new Scene3D.Light3D();
 		light.name = name;
 		light.pos = new float[3];
 		ChunkVector(light.pos, 0);
@@ -627,11 +631,11 @@ class Load3DS {
 		return light;
 	}
 
-	private Material3D ChunkMaterial(int len) throws IOException
+	private Scene3D.Material3D ChunkMaterial(int len) throws IOException
 	{
 		long end = filePos + len;
 
-		Material3D mat = new Material3D();
+		Scene3D.Material3D mat = new Scene3D.Material3D();
 
 		while (filePos < end) {
 			int chunkID = ReadUnsignedShort();
@@ -736,7 +740,7 @@ class Load3DS {
 				break;
 
 			case CHUNK_TRACKINFO:
-				Animation anim = ChunkMeshTrack(chunkLen, scene);
+				Scene3D.Animation anim = ChunkMeshTrack(chunkLen, scene);
 				if (anim != null)
 					scene.animations.add(anim);
 				break;
@@ -749,7 +753,7 @@ class Load3DS {
 
 		if (fstart < fend)
 			for (int i = 0; i < scene.animations.size(); i++) {
-				Animation anim = scene.animations.get(i);
+				Scene3D.Animation anim = scene.animations.get(i);
 				if (anim.position != null)
 					for (int j = 0; j < anim.position.length; j++)
 						anim.position[j].time = (anim.position[j].time - fstart) / (fend - fstart);
@@ -764,9 +768,9 @@ class Load3DS {
 		Seek(end);
 	}
 
-	private Animation ChunkMeshTrack(int len, Scene3D scene) throws IOException
+	private Scene3D.Animation ChunkMeshTrack(int len, Scene3D scene) throws IOException
 	{
-		Animation anim = new Animation();
+		Scene3D.Animation anim = new Scene3D.Animation();
 		int num, i, j, k;
 
 		anim.result = new float[16];
@@ -801,9 +805,9 @@ class Load3DS {
 			case CHUNK_TRACKPOS:
 				Skip(10);
 				num = ReadInt();
-				anim.position = new AnimKey[num];
+				anim.position = new Scene3D.AnimKey[num];
 				for (i = 0; i < num; i++) {
-					anim.position[i] = new AnimKey();
+					anim.position[i] = new Scene3D.AnimKey();
 					anim.position[i].time = ReadInt();
 					k = ReadUnsignedShort();
 					for (j = 0; j < 5; j++)
@@ -817,9 +821,9 @@ class Load3DS {
 			case CHUNK_TRACKROT:
 				Skip(10);
 				num = ReadInt();
-				anim.rotation = new AnimKey[num];
+				anim.rotation = new Scene3D.AnimKey[num];
 				for (i = 0; i < num; i++) {
-					anim.rotation[i] = new AnimKey();
+					anim.rotation[i] = new Scene3D.AnimKey();
 					anim.rotation[i].time = ReadInt();
 					k = ReadUnsignedShort();
 					for (j = 0; j < 5; j++)
@@ -834,9 +838,9 @@ class Load3DS {
 			case CHUNK_TRACKSCL:
 				Skip(10);
 				num = ReadInt();
-				anim.scaling = new AnimKey[num];
+				anim.scaling = new Scene3D.AnimKey[num];
 				for (i = 0; i < num; i++) {
-					anim.scaling[i] = new AnimKey();
+					anim.scaling[i] = new Scene3D.AnimKey();
 					anim.scaling[i].time = ReadInt();
 					k = ReadUnsignedShort();
 					for (j = 0; j < 5; j++)
